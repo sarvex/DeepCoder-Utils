@@ -36,7 +36,7 @@ def type_to_string(t):
         return 'bool'
     if t == [bool]:
         return '[bool]'
-    raise ValueError('Type %s cannot be converted to string.' % t)
+    raise ValueError(f'Type {t} cannot be converted to string.')
 
 
 def scanl1(f, xs):
@@ -52,12 +52,7 @@ def scanl1(f, xs):
 def SQR_bounds(A, B):
     l = max(0, A)   # inclusive lower bound
     u = B - 1       # inclusive upper bound
-    if l > u:
-        return [(0, 0)]
-    # now 0 <= l <= u
-    # ceil(sqrt(l))
-    # Assume that if anything is valid then 0 is valid
-    return [(-int(sqrt(u)), ceil(sqrt(u+1)))]
+    return [(0, 0)] if l > u else [(-int(sqrt(u)), ceil(sqrt(u+1)))]
 
 
 def MUL_bounds(A, B):
@@ -65,11 +60,11 @@ def MUL_bounds(A, B):
 
 
 def scanl1_bounds(l, A, B, L):
-    if l.src == '+' or l.src == '-':
+    if l.src in ['+', '-']:
         return [(A/L+1, B/L)]
     elif l.src == '*':
         return [(int((max(0, A)+1) ** (1.0 / L)), int((max(0, B)) ** (1.0 / L)))]
-    elif l.src == 'MIN' or l.src == 'MAX':
+    elif l.src in ['MIN', 'MAX']:
         return [(A, B)]
     else:
         raise Exception('Unsupported SCANL1 lambda, cannot compute valid input bounds.')
@@ -179,10 +174,10 @@ def compile(source_code, V, L, min_input_range_length=0):
             args = split[1:]
             # Handle lambda
             if len(split[1]) > 1 or split[1] < 'a' or split[1] > 'z':
-                command += ' ' + split[1]
+                command += f' {split[1]}'
                 args = split[2:]
             f = LINQ[LINQ_names.index(command)]
-            assert len(f.sig) - 1 == len(args), "Wrong number of arguments for %s" % command
+            assert len(f.sig) - 1 == len(args), f"Wrong number of arguments for {command}"
             ps = [ord(arg) - ord('a') for arg in args]
             types.append(f.sig[-1])
             functions.append(f)
@@ -205,7 +200,7 @@ def compile(source_code, V, L, min_input_range_length=0):
                                               min(limits[p][1], new_lims[a][1]))
                     #print('t=%d: New limit for %d is %s' % (t, p, limits[pointers[t][a]]))
             elif min_input_range_length >= limits[t][1] - limits[t][0]:
-                print('Program with no valid inputs: %s' % source_code)
+                print(f'Program with no valid inputs: {source_code}')
                 return None
 
     # for t in range(input_length, program_length):
@@ -255,7 +250,9 @@ def generate_IO_examples(program, N, L, V):
             elif input_types[a] == [int]:
                 input_value[a] = list(np.random.randint(minv, maxv, size=L))
             else:
-                raise Exception("Unsupported input type " + input_types[a] + " for random input generation")
+                raise Exception(
+                    f"Unsupported input type {input_types[a]} for random input generation"
+                )
         output_value = program.fun(input_value)
         IO.append((input_value, output_value))
         assert (program.out == int and output_value <= V) or (program.out == [int] and len(output_value) == 0) or (program.out == [int] and max(output_value) <= V)
@@ -273,4 +270,4 @@ if __name__ == '__main__':
     program = compile(source, V=value_range, L=length)
     samples = generate_IO_examples(program, N=number, L=length, V=value_range)
     for (inputs, outputs) in samples:
-        print("%s -> %s" % (inputs, outputs))
+        print(f"{inputs} -> {outputs}")
